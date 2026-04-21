@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Design tokens ──────────────────────────────────────────── */
+    :root {
+      --ink:        #1a1a18;
+      --ink-muted:  #5a5a52;
+      --ink-faint:  #a0a090;
+      --bg:         #f7f4ee;
+      --surface:    #ffffff;
+      --surface-2:  #f0ece2;
+      --border:     #ddd8cc;
+      --border-mid: #c8c2b2;
+      --accent:     #2d5a3d;
+      --accent-dim: #3a7050;
+      --accent-bg:  #eaf3ec;
+      --red:        #b03030;
+      --red-bg:     #fdf0f0;
+      --gold:       #c8960c;
+      --radius:     6px;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+      --shadow:     0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 28px 32px 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.18);
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+    header .subtitle {
+      font-size: .8rem;
+      opacity: .65;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: .04em;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 0;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 780px) {
+      .layout { grid-template-columns: 1fr; padding: 16px 16px 0; }
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-header .icon {
+      width: 28px; height: 28px;
+      background: var(--accent-bg);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: .85rem;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Form ───────────────────────────────────────────────────── */
+    .field { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: .92rem;
+      color: var(--ink);
+      background: var(--surface);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(45,90,61,.12);
+    }
+    input.error-field { border-color: var(--red); }
+    .field-error {
+      font-size: .75rem;
+      color: var(--red);
+      margin-top: 4px;
+    }
+
+    /* Amount field with ₹ prefix */
+    .amount-wrap { position: relative; }
+    .amount-wrap .prefix {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .9rem;
+      color: var(--ink-muted);
+      pointer-events: none;
+    }
+    .amount-wrap input { padding-left: 28px; font-family: 'IBM Plex Mono', monospace; }
+
+    /* Submit button */
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .15s, opacity .15s;
+      margin-top: 4px;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dim); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* ── Alerts ─────────────────────────────────────────────────── */
+    .alert {
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-size: .85rem;
+      line-height: 1.45;
+      margin-top: 12px;
+      display: none;
+    }
+    .alert.show { display: block; }
+    .alert-success { background: var(--accent-bg); color: #1e4d2b; border: 1px solid #b5d9be; }
+    .alert-error   { background: var(--red-bg);    color: #7a1f1f; border: 1px solid #e8b4b4; }
+
+    /* ── Toolbar (filter + sort) ────────────────────────────────── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .toolbar label { margin-bottom: 0; white-space: nowrap; }
+    .toolbar select { width: auto; min-width: 140px; font-size: .85rem; padding: 7px 10px; }
+    .toolbar-spacer { flex: 1; }
+    .btn-clear {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--ink-muted);
+      background: none;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .btn-clear:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Summary bar ─────────────────────────────────────────────── */
+    .summary-bar {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+    }
+    .summary-item { display: flex; flex-direction: column; gap: 1px; }
+    .summary-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint); font-weight: 600; }
+    .summary-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .summary-value.total { color: var(--accent); font-size: 1.3rem; }
+
+    /* ── Category breakdown ──────────────────────────────────────── */
+    .breakdown { margin-bottom: 18px; }
+    .breakdown-title {
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+    .breakdown-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .breakdown-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px 10px 4px 6px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: border-color .12s, background .12s;
+    }
+    .breakdown-pill:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .breakdown-pill.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+    .breakdown-pill .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .breakdown-pill .pill-name { font-weight: 600; }
+    .breakdown-pill .pill-amount { font-family: 'IBM Plex Mono', monospace; color: var(--ink-muted); }
+
+    /* ── Table ──────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th.right { text-align: right; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td { padding: 12px 14px; vertical-align: middle; }
+    tbody td.mono { font-family: 'IBM Plex Mono', monospace; }
+    tbody td.right { text-align: right; }
+    tbody td.amount {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .92rem;
+      font-weight: 500;
+      color: var(--ink);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .category-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+    .desc-text { color: var(--ink-muted); }
+
+    /* ── Empty / loading / error states ─────────────────────────── */
+    .state-box {
+      text-align: center;
+      padding: 52px 20px;
+      color: var(--ink-muted);
+    }
+    .state-box .icon { font-size: 2rem; margin-bottom: 10px; }
+    .state-box p { font-size: .9rem; }
+    .state-box .retry-btn {
+      margin-top: 12px;
+      background: none;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius);
+      padding: 7px 14px;
+      font-size: .85rem;
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      display: none;
+    }
+    .spinner.show { display: block; }
+
+    /* Row enter animation */
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .row-new { animation: rowIn .25s ease; }
+
+    /* ── Category colour map ─────────────────────────────────────── */
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Expense Tracker</h1>
+  <span class="subtitle">personal finance / v1.0</span>
+</header>
+
+<div class="layout">
+
+  <!-- ── LEFT: Add expense form ─────────────────────────────────── -->
+  <aside>
+    <div class="card">
+      <div class="card-header">
+        <span class="icon">＋</span>
+        Add Expense
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label for="f-amount">Amount (₹)</label>
+          <div class="amount-wrap">
+            <span class="prefix">₹</span>
+            <input type="number" id="f-amount" placeholder="0.00"
+                   min="0.01" step="0.01" inputmode="decimal" />
+          </div>
+          <div class="field-error" id="err-amount"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-category">Category</label>
+          <select id="f-category">
+            <option value="">— select —</option>
+            <option>Food</option>
+            <option>Transport</option>
+            <option>Shopping</option>
+            <option>Entertainment</option>
+            <option>Health</option>
+            <option>Utilities</option>
+            <option>Education</option>
+            <option>Travel</option>
+            <option>Other</option>
+          </select>
+          <div class="field-error" id="err-category"></div>
+        </div>
+
+        <div class="field">
+          <label for="f-desc">Description</label>
+          <input type="text" id="f-desc" placeholder="e.g. Lunch at canteen" maxlength="500" />
+        </div>
+
+        <div class="field">
+          <label for="f-date">Date</label>
+          <input type="date" id="f-date" />
+          <div class="field-error" id="err-date"></div>
+        </div>
+
+        <button class="btn-primary" id="submit-btn" onclick="handleSubmit()">
+          <span id="btn-text">Add Expense</span>
+          <span class="spinner" id="btn-spinner"></span>
+        </button>
+
+        <div class="alert alert-success" id="alert-success"></div>
+        <div class="alert alert-error"   id="alert-error"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── RIGHT: List ────────────────────────────────────────────── -->
+  <main>
+    <div class="card">
+      <div class="card-header">
+        <span class="icon">📋</span>
+        Expenses
+      </div>
+      <div class="card-body">
+
+        <!-- Summary bar -->
+        <div class="summary-bar">
+          <div class="summary-item">
+            <span class="summary-label">Total</span>
+            <span class="summary-value total" id="s-total">₹0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Entries</span>
+            <span class="summary-value" id="s-count">0</span>
+          </div>
+        </div>
+
+        <!-- Category breakdown pills -->
+        <div class="breakdown" id="breakdown-section" style="display:none">
+          <div class="breakdown-title">By category</div>
+          <div class="breakdown-list" id="breakdown-list"></div>
+        </div>
+
+        <!-- Filter + sort toolbar -->
+        <div class="toolbar">
+          <label>Filter</label>
+          <select id="filter-cat" onchange="applyFilters()">
+            <option value="">All categories</option>
+          </select>
+
+          <label>Sort</label>
+          <select id="sort-order" onchange="applyFilters()">
+            <option value="date_desc">Date ↓ newest</option>
+            <option value="date_asc">Date ↑ oldest</option>
+            <option value="amount_desc">Amount ↓ highest</option>
+            <option value="amount_asc">Amount ↑ lowest</option>
+          </select>
+
+          <div class="toolbar-spacer"></div>
+          <button class="btn-clear" onclick="clearFilters()">Clear filters</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th class="right">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="expense-tbody"></tbody>
+          </table>
+          <div id="table-state" class="state-box">
+            <div class="icon">⏳</div>
+            <p>Loading expenses…</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+</div><!-- /.layout -->
+
+<script>
+
+const userId = localStorage.getItem("user_id") || crypto.randomUUID();
+localStorage.setItem("user_id", userId);
+// ─────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────
+const API_BASE = (() => {
+  // If the HTML is opened via file://, default to localhost.
+  // If served from the same origin as the API, use relative paths.
+  const h = location.hostname;
+  if (!h || h === 'localhost' || h === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  // On Render / production: frontend served separately — update this URL
+  // to your deployed API e.g. 'https://expense-tracker-api.onrender.com'
+  return window.EXPENSE_API_BASE || 'http://localhost:8000';
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// Category colours (consistent across app)
+// ─────────────────────────────────────────────────────────────────
+const CAT_COLORS = {
+  Food:          '#e07b39',
+  Transport:     '#3a82c4',
+  Shopping:      '#9b59b6',
+  Entertainment: '#e74c6a',
+  Health:        '#27ae60',
+  Utilities:     '#f39c12',
+  Education:     '#2980b9',
+  Travel:        '#16a085',
+  Other:         '#7f8c8d',
+};
+function catColor(c) { return CAT_COLORS[c] || '#888'; }
+function catBg(c)    { return catColor(c) + '22'; }
+
+// ─────────────────────────────────────────────────────────────────
+// Idempotency key management
+// Persisted in sessionStorage so page refreshes don't duplicate.
+// ─────────────────────────────────────────────────────────────────
+const IK_KEY = 'expense_tracker_pending_ik';
+
+function getOrCreateIdempotencyKey() {
+  let k = sessionStorage.getItem(IK_KEY);
+  if (!k) {
+    k = crypto.randomUUID().replace(/-/g, '');
+    sessionStorage.setItem(IK_KEY, k);
+  }
+  return k;
+}
+
+function rotateIdempotencyKey() {
+  // Called after a successful submission — next submit gets a fresh key
+  const k = crypto.randomUUID().replace(/-/g, '');
+  sessionStorage.setItem(IK_KEY, k);
+  return k;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Validation
+// ─────────────────────────────────────────────────────────────────
+function clearErrors() {
+  ['amount','category','date'].forEach(f => {
+    document.getElementById(`err-${f}`).textContent = '';
+    const el = document.getElementById(`f-${f}`);
+    if (el) el.classList.remove('error-field');
+  });
+}
+
+function setError(field, msg) {
+  document.getElementById(`err-${field}`).textContent = msg;
+  const el = document.getElementById(`f-${field}`);
+  if (el) el.classList.add('error-field');
+}
+
+function validateForm() {
+  clearErrors();
+  let ok = true;
+
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  if (!amount || amount <= 0) {
+    setError('amount', 'Enter a positive amount.');
+    ok = false;
+  } else if (amount > 10_000_000) {
+    setError('amount', 'Amount too large.');
+    ok = false;
+  }
+
+  const cat = document.getElementById('f-category').value;
+  if (!cat) { setError('category', 'Select a category.'); ok = false; }
+
+  const date = document.getElementById('f-date').value;
+  if (!date) {
+    setError('date', 'Select a date.');
+    ok = false;
+  } else if (date > new Date().toISOString().slice(0,10)) {
+    setError('date', 'Date cannot be in the future.');
+    ok = false;
+  }
+
+  return ok;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Alert helpers
+// ─────────────────────────────────────────────────────────────────
+function showAlert(type, msg) {
+  ['success','error'].forEach(t => {
+    const el = document.getElementById(`alert-${t}`);
+    el.classList.remove('show');
+    el.textContent = '';
+  });
+  const el = document.getElementById(`alert-${type}`);
+  el.textContent = msg;
+  el.classList.add('show');
+  if (type === 'success') setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Submit handler
+// ─────────────────────────────────────────────────────────────────
+let submitting = false;
+
+async function handleSubmit() {
+  if (submitting) return;      // guard double-click
+  if (!validateForm()) return;
+
+  submitting = true;
+  const btn    = document.getElementById('submit-btn');
+  const btnTxt = document.getElementById('btn-text');
+  const spinner = document.getElementById('btn-spinner');
+  btn.disabled = true;
+  btnTxt.textContent = 'Saving…';
+  spinner.classList.add('show');
+  document.getElementById('alert-error').classList.remove('show');
+
+  const idempotencyKey = getOrCreateIdempotencyKey();
+
+  const payload = {
+    idempotency_key: idempotencyKey,
+    amount:          parseFloat(document.getElementById('f-amount').value).toFixed(2),
+    category:        document.getElementById('f-category').value,
+    description:     document.getElementById('f-desc').value.trim(),
+    date:            document.getElementById('f-date').value,
+    user_id: userId, 
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/expenses`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err?.detail?.[0]?.msg || err?.detail || `Server error (${res.status})`;
+      showAlert('error', '⚠ ' + msg);
+      return; // keep same idempotency key so retry is safe
+    }
+
+    const created = await res.json();
+    const wasDuplicate = res.status === 200;
+
+    // Success! Reset form, rotate key, reload list
+    rotateIdempotencyKey();
+    resetForm();
+    showAlert('success', wasDuplicate
+      ? '✔ Already recorded — no duplicate created.'
+      : `✔ Added ₹${Number(created.amount).toLocaleString('en-IN', {minimumFractionDigits:2})} to ${created.category}`
+    );
+    await loadExpenses(true);
+
+  } catch (err) {
+    // Network failure — keep same idempotency key so retry is idempotent
+    showAlert('error', '⚠ Network error. Check your connection and try again.');
+  } finally {
+    submitting = false;
+    btn.disabled = false;
+    btnTxt.textContent = 'Add Expense';
+    spinner.classList.remove('show');
+  }
+}
+
+function resetForm() {
+  document.getElementById('f-amount').value   = '';
+  document.getElementById('f-category').value = '';
+  document.getElementById('f-desc').value     = '';
+  // Keep date — user likely adding multiple for the same day
+  clearErrors();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Load + render expenses
+// ─────────────────────────────────────────────────────────────────
+let allExpenses = [];   // raw from API (already filtered+sorted by server)
+let newlyAddedId = null;
+
+async function loadExpenses(markNewest = false) {
+  const cat  = document.getElementById('filter-cat').value;
+  const sort = document.getElementById('sort-order').value;
+
+  const params = new URLSearchParams({ sort });
+  if (cat) params.set('category', cat);
+  params.set('user_id', userId);
+
+  setTableState('loading');
+
+  try {
+
+    const res = await fetch(`${API_BASE}/expenses?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    allExpenses = data.data;
+
+    // Update summary
+    document.getElementById('s-total').textContent =
+      '₹' + Number(data.total).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('s-count').textContent = data.count;
+
+    renderTable(markNewest);
+    renderBreakdown(data.data);
+    populateCategoryFilter(data.data);
+
+  } catch (err) {
+    setTableState('error');
+  }
+}
+
+function renderTable(markNewest) {
+  const tbody = document.getElementById('expense-tbody');
+  tbody.innerHTML = '';
+
+  if (!allExpenses.length) {
+    setTableState('empty');
+    return;
+  }
+  setTableState('hidden');
+
+  const newestId = markNewest && allExpenses.length ? allExpenses[0].id : null;
+
+  allExpenses.forEach((exp, idx) => {
+    const tr = document.createElement('tr');
+    if (idx === 0 && markNewest) tr.classList.add('row-new');
+
+    const dateStr = new Date(exp.date + 'T00:00:00').toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+    const amtStr = '₹' + Number(exp.amount).toLocaleString('en-IN', {
+      minimumFractionDigits:2, maximumFractionDigits:2
+    });
+
+    tr.innerHTML = `
+      <td class="mono" style="font-size:.82rem;color:var(--ink-muted)">${dateStr}</td>
+      <td>
+        <span class="category-tag"
+              style="color:${catColor(exp.category)};background:${catBg(exp.category)}">
+          ${exp.category}
+        </span>
+      </td>
+      <td class="desc-text">${esc(exp.description) || '<span style="color:var(--ink-faint);font-size:.8rem">—</span>'}</td>
+      <td class="amount">${amtStr}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBreakdown(expenses) {
+  const section = document.getElementById('breakdown-section');
+  const list    = document.getElementById('breakdown-list');
+
+  if (!expenses.length) { section.style.display = 'none'; return; }
+
+  // Group by category
+  const groups = {};
+  expenses.forEach(e => {
+    groups[e.category] = (groups[e.category] || 0) + Number(e.amount);
+  });
+
+  const sorted = Object.entries(groups).sort((a,b) => b[1]-a[1]);
+  if (sorted.length < 2) { section.style.display = 'none'; return; }
+
+  section.style.display = '';
+  list.innerHTML = '';
+  sorted.forEach(([cat, total]) => {
+    const pill = document.createElement('button');
+    pill.className = 'breakdown-pill';
+    const currentFilter = document.getElementById('filter-cat').value;
+    if (currentFilter === cat) pill.classList.add('active');
+
+    pill.innerHTML = `
+      <span class="dot" style="background:${catColor(cat)}"></span>
+      <span class="pill-name">${cat}</span>
+      <span class="pill-amount">₹${total.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
+    `;
+    pill.onclick = () => {
+      const fc = document.getElementById('filter-cat');
+      fc.value = (fc.value === cat) ? '' : cat;
+      applyFilters();
+    };
+    list.appendChild(pill);
+  });
+}
+
+function populateCategoryFilter(expenses) {
+  const sel = document.getElementById('filter-cat');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All categories</option>';
+
+  const cats = [...new Set(expenses.map(e => e.category))].sort();
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    if (c === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function setTableState(state) {
+  const box   = document.getElementById('table-state');
+  const tbody = document.getElementById('expense-tbody');
+  box.style.display   = state === 'hidden' ? 'none' : '';
+  tbody.style.display = state === 'hidden' ? '' : 'none';
+
+  if (state === 'loading') {
+    box.innerHTML = `<div class="icon">⏳</div><p>Loading…</p>`;
+  } else if (state === 'empty') {
+    box.innerHTML = `<div class="icon">📭</div><p>No expenses yet. Add one!</p>`;
+  } else if (state === 'error') {
+    box.innerHTML = `
+      <div class="icon">⚡</div>
+      <p>Could not connect to the API.<br/>
+         Make sure the backend is running at <code>${API_BASE}</code></p>
+      <button class="retry-btn" onclick="loadExpenses()">Retry</button>
+    `;
+  }
+}
+
+function applyFilters() { loadExpenses(false); }
+
+function clearFilters() {
+  document.getElementById('filter-cat').value = '';
+  document.getElementById('sort-order').value  = 'date_desc';
+  loadExpenses(false);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Utility
+// ─────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Default date to today
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+
+  // Ensure an idempotency key is ready before the first submit
+  getOrCreateIdempotencyKey();
+
+  loadExpenses();
+});
+
+// Allow Enter key on form to submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') handleSubmit();
+});
+</script>
+</body>
+</html>
